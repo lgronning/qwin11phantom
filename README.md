@@ -1,8 +1,8 @@
 > And some say it's still using desktop computers, even to this day 👻
 
-![phantom screenshot light](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_demo_1x_light_3.png)
+![light mode](https://user-images.githubusercontent.com/31950538/210968770-80d5bee2-7cc7-42bf-8b37-c9961b871cf3.png)
 
-![phantom screenshot dark](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_demo_1x_dark_3.png)
+![dark mode](https://user-images.githubusercontent.com/31950538/210969022-ea569ed8-864a-4b8e-9dcd-d13fd1fa4720.png)
 
 ## Phantom Style
 
@@ -37,21 +37,9 @@ Uses `auto` from C++11, so C++11 is needed. C++14 and later are not needed.
 
 LGPL 2.1.
 
-I would prefer to give it a more permissive license, or the same license that
-the official code Qt has, which allows commercial projects to use the code
-without LGPL restrictions if they have a Qt license. However, I don't know how
-to do this, and I don't have time at the moment to figure it out. Please
-contact me or open a ticket if you can help with this. The PhantomStyle code
-originally started as a copy-and-paste of the Fusion code, but nearly none of
-the Fusion code remains at this point (just some stuff for drawing MDI window
-decorations and QDial.)
-
 ## TODO
 
-* More screenshots
-* Several things haven't been fully tested (MDI windows, tick marks on sliders,
-  a few more I can't think of.)
-* Probably lots of bugs
+* A few things still needs to be done. Any cotribution is very welcome
 
 ```
 QWin11Phantom Style
