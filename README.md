@@ -4,8 +4,6 @@
 
 ![phantom screenshot dark](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_demo_1x_dark_3.png)
 
-[More screenshots](https://github.com/randrew/phantomstyle/wiki/Comparison-Screenshots)
-
 ## Phantom Style
 
 QWin11Phantom is a Windows 11 QStyle for Qt which is built on PhantomStyle.
@@ -57,7 +55,7 @@ decorations and QDial.)
 
 ```
 QWin11Phantom Style
-Copyright (C) 2023 Lars Grønning
+Copyright (C) 2023 lgronning
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
