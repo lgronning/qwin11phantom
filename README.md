@@ -6,7 +6,7 @@
 
 ## Phantom Style
 
-QWin11Phantom is a Windows 11 QStyle for Qt which is built on PhantomStyle.
+QWin11Phantom is a Windows 11 QStyle for Qt which is built on PhantomStyle https://github.com/randrew/phantomstyle.
 
 * [Usage](#usage)
 * [Compatibility](#compatibility)
