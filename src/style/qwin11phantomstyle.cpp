@@ -112,7 +112,7 @@ enum {
 };
 
 static const qreal Default_Rounding = 6.0;
-static const qreal Default_Thickness = 0.5;
+static const qreal Default_Thickness = 0.3;
 static const qreal Edge_Default_Thickness = 1.0;
 static const qreal TabBarTab_Rounding = 4.0;
 static const qreal SliderHandle_Rounding = 2.0;
@@ -1166,11 +1166,12 @@ Q_NEVER_INLINE void drawMdiButton(QPainter* painter,
 
 void drawRoundedBorder(QPainter* p, const QRectF &rect, double thickness, double roundedRadius, const PhSwatch& swatch, Swatchy border)
 {
-    p->save();
+    PSave save(p);
 
     /* Draw the thin border */
     p->setPen(QPen(swatch.color(border), thickness));
     p->setBrush(Qt::NoBrush);
+    p->setRenderHint(QPainter::Antialiasing);
 
     auto tempRect = rect.adjusted(thickness,thickness,-thickness,-thickness);
     if(roundedRadius == 0)
@@ -1181,8 +1182,6 @@ void drawRoundedBorder(QPainter* p, const QRectF &rect, double thickness, double
     {
         p->drawRoundedRect(tempRect, roundedRadius, roundedRadius);
     }
-
-    p->restore();
 }
 
 
@@ -1208,6 +1207,7 @@ void drawFilledRect(QPainter* p, const QRectF & rect, double roundedRadius, doub
     PSave save(p);
     p->setPen(tempPen);
     p->setBrush(swatch.color(fill));
+    p->setRenderHint(QPainter::Antialiasing);
 
     auto tempRect = rect.adjusted(thickness,thickness,-thickness,-thickness);
     if(roundedRadius == 0)
@@ -1229,8 +1229,6 @@ drawFilledRectNoBorder(QPainter* p, const QRectF &rect, double radius, const PhS
 void
 fillRectEdges(QPainter* p, const QRectF & rect, Qt::Edges edges, const QMarginsF &margins, double radius, const PhSwatch& swatch, Swatchy border)
 {
-    p->save();
-
     if (edges & Qt::LeftEdge)
     {
         auto r = rect;
@@ -1262,9 +1260,27 @@ fillRectEdges(QPainter* p, const QRectF & rect, Qt::Edges edges, const QMarginsF
         p->setClipRect(r);
 
         drawFilledRectNoBorder(p, rect, radius, swatch, border);
+
+
+//        PSave save(p);
+//        p->setPen(Qt::NoPen);
+//        p->setBrush(swatch.color(border));
+//        p->setRenderHint(QPainter::Antialiasing);
+
+//        QPainterPath path;
+//        path.addRoundedRect(rect, radius, radius, Qt::AbsoluteSize);
+
+//        QPainterPath subtractPath;
+//        QRectF subtractRect = rect;
+//        r.setBottom(rect.bottom()-10);
+//        subtractPath.addRect(subtractRect);
+
+//        path = path.subtracted(subtractPath);
+
+//        p->drawPath(path);
     }
 
-    p->restore();
+    p->setClipRect(QRect(), Qt::ClipOperation::NoClip);
 }
 
 void fillRectEdges(QPainter* p, const QRectF & rect, Qt::Edges edges, double thickness, double radius, const PhSwatch& swatch, Swatchy border)
@@ -1661,7 +1677,6 @@ void QWin11PhantomStyle::drawPrimitive(PrimitiveElement elem,
     case PE_FrameLineEdit: {
         QRect r = option->rect;
 
-        painter->save();
         drawRoundedBorder(painter, r, Ph::Default_Rounding, swatch, S_window_outline);
         if(option->state & State_HasFocus)
         {
@@ -1671,14 +1686,28 @@ void QWin11PhantomStyle::drawPrimitive(PrimitiveElement elem,
         {
             Ph::fillRectEdges(painter, r, Qt::BottomEdge, Ph::Edge_Default_Thickness, Ph::Default_Rounding, swatch, S_window_outline);
         }
-        painter->restore();
         break;
     }
     case PE_PanelLineEdit: {
         auto panel = qstyleoption_cast<const QStyleOptionFrame*>(option);
         if (!panel)
             break;
-        Ph::PSave save(painter);
+
+        if(widget)
+        {
+            const auto *spinBox = dynamic_cast<const QAbstractSpinBox*>(widget->parentWidget());
+            if(spinBox)
+            {
+                return;
+            }
+
+            const auto *comboBox = dynamic_cast<const QComboBox*>(widget->parentWidget());
+            if(comboBox)
+            {
+                return;
+            }
+        }
+
         // We intentionally don't inset the fill rect, even if the frame will paint
         // over the perimeter, because an inset with rounding enabled may cause
         // some miscolored separated pixels between the fill and the border, since
@@ -1693,7 +1722,7 @@ void QWin11PhantomStyle::drawPrimitive(PrimitiveElement elem,
         }
 
         Ph::drawFilledRectNoBorder(painter, option->rect, Ph::Default_Rounding, swatch, fill);
-        save.restore();
+
         if (panel->lineWidth > 0)
             proxy()->drawPrimitive(PE_FrameLineEdit, option, painter, widget);
         break;
@@ -3036,7 +3065,8 @@ void QWin11PhantomStyle::drawComplexControl(ComplexControl control,
 
         Ph::drawFilledRectNoBorder(painter, rect, Ph::Default_Rounding, swatch, buttonFill);
 
-        if (spinBox->frame) {
+        if (spinBox->frame)
+        {
             QStyleOptionFrame frameOption;
             frameOption.QStyleOption::operator=(*spinBox);
             frameOption.rect = spinBox->rect;
@@ -3048,6 +3078,7 @@ void QWin11PhantomStyle::drawComplexControl(ComplexControl control,
                 frameOption.state |= State_Sunken;
                 frameOption.state &= ~State_MouseOver;
             }
+
             proxy()->drawPrimitive(PE_FrameLineEdit, &frameOption, painter, widget);
         }
 
@@ -4165,7 +4196,10 @@ QSize QWin11PhantomStyle::sizeFromContents(ContentsType type,
             } else {
                 pad = (int)Ph::dpiScaled(Ph::ComboBox_NonEditable_ContentsHPad);
             }
-            newSize.rwidth() += pad * 2;
+            newSize.rwidth() += (pad * 2);
+
+            const int fw = cb->frame ? proxy()->pixelMetric(PM_SpinBoxFrameWidth, cb, widget) : 0;
+            newSize += QSize(2*fw, 2*fw);
         }
 #endif
         break;
@@ -4174,9 +4208,21 @@ QSize QWin11PhantomStyle::sizeFromContents(ContentsType type,
         newSize += QSize(0, 3);
         int pad = (int)Ph::dpiScaled(Ph::LineEdit_ContentsHPad);
         newSize.rwidth() += pad * 2;
+        newSize.rheight() += Ph::Frame_Selected_Edge_Width;
         break;
     }
     case CT_SpinBox:
+        if (const QStyleOptionSpinBox *vopt = qstyleoption_cast<const QStyleOptionSpinBox *>(option))
+        {
+            int pad = 0;
+            pad = (int)Ph::dpiScaled(Ph::LineEdit_ContentsHPad);
+            newSize.rwidth() += (pad * 2);
+
+            const int fw = vopt->frame ? proxy()->pixelMetric(PM_SpinBoxFrameWidth, vopt, widget) : 0;
+            newSize += QSize(2*fw, 2*fw);
+        }
+
+
         // No adjustment necessary
         break;
     case CT_SizeGrip:
@@ -4325,49 +4371,51 @@ QRect QWin11PhantomStyle::subControlRect(ComplexControl control,
 #endif // QT_CONFIG(slider)
 #if QT_CONFIG(spinbox)
     case CC_SpinBox: {
-        auto spinbox = qstyleoption_cast<const QStyleOptionSpinBox*>(option);
-        if (!spinbox)
-            break;
-        // Some leftover Fusion code here. Should clean up this mess.
-        int center = spinbox->rect.height() / 2;
-        int fw = proxy()->pixelMetric(PM_SpinBoxFrameWidth, spinbox, widget);
-        int y = fw;
-        const int buttonWidth = (int)Ph::dpiScaled(Ph::SpinBox_ButtonWidth) + 2;
-        int x, lx, rx;
-        x = spinbox->rect.width() - y - buttonWidth + 2;
-        lx = fw;
-        rx = x - fw;
+        auto cb = qstyleoption_cast<const QStyleOptionSpinBox*>(option);
+        if (!cb)
+            return QRect();
+        int frame =
+                cb->frame ? proxy()->pixelMetric(PM_SpinBoxFrameWidth, cb, widget) : 0;
+        QRect rect = option->rect;
+        rect.adjust(frame, frame, -frame, -frame);
+        int center = rect.height() / 2;
+
+        int dim = qMin(rect.width(), rect.height());
+        if (dim < 1)
+            return QRect();
         switch (subControl) {
-        case SC_SpinBoxUp:
-            if (spinbox->buttonSymbols == QAbstractSpinBox::NoButtons)
-                return QRect();
-            rect = QRect(x, fw, buttonWidth, center - fw);
+        case SC_SpinBoxFrame:
+            rect = cb->rect;
             break;
-        case SC_SpinBoxDown:
-            if (spinbox->buttonSymbols == QAbstractSpinBox::NoButtons)
+        case SC_SpinBoxUp:
+            if (cb->buttonSymbols == QAbstractSpinBox::NoButtons)
                 return QRect();
 
-            rect = QRect(x, center, buttonWidth,
-                         spinbox->rect.bottom() - center - fw + 1);
+            rect.setX((rect.x() +rect.width()) - dim + 1);
+            rect.setBottom(rect.bottom() - center);
             break;
-        case SC_SpinBoxEditField:
-            if (spinbox->buttonSymbols == QAbstractSpinBox::NoButtons) {
-                rect = QRect(lx, fw, spinbox->rect.width() - 2 * fw,
-                             spinbox->rect.height() - 2 * fw);
-            } else {
-                rect = QRect(lx, fw, rx - qMax(fw - 1, 0),
-                             spinbox->rect.height() - 2 * fw);
+        case SC_SpinBoxDown:
+            if (cb->buttonSymbols == QAbstractSpinBox::NoButtons)
+                return QRect();
+
+            rect.setX((rect.x() +rect.width()) - dim + 1);
+            rect.setTop(rect.top() + center);
+            break;
+        case SC_SpinBoxEditField: {
+            // Add extra padding if not editable
+            if (cb->buttonSymbols != QAbstractSpinBox::NoButtons) {
+                rect.setRight(rect.right() - dim);
             }
+            rect.setBottom(rect.bottom() - Ph::Frame_Selected_Edge_Width);
             break;
-        case SC_SpinBoxFrame:
-            rect = spinbox->rect;
-            break;
+        }
         default:
             break;
         }
-        rect = visualRect(spinbox->direction, spinbox->rect, rect);
+        rect = visualRect(cb->direction, cb->rect, rect);
         break;
     }
+
 #endif // QT_CONFIG(spinbox)
 #if QT_CONFIG(groupbox)
     case CC_GroupBox: {
@@ -4464,9 +4512,8 @@ QRect QWin11PhantomStyle::subControlRect(ComplexControl control,
         case SC_ComboBoxFrame:
             return cb->rect;
         case SC_ComboBoxArrow: {
-            QRect r0 = r;
-            r0.setX((r0.x() + r0.width()) - dim + 1);
-            return visualRect(option->direction, option->rect, r0);
+            r.setX((r.x() + r.width()) - dim + 1);
+            return visualRect(option->direction, option->rect, r);
         }
         case SC_ComboBoxEditField: {
             // Add extra padding if not editable
@@ -4476,7 +4523,7 @@ QRect QWin11PhantomStyle::subControlRect(ComplexControl control,
             } else {
                 pad = (int)Ph::dpiScaled(Ph::ComboBox_NonEditable_ContentsHPad);
             }
-            r.adjust(pad, 0, -dim, 0);
+            r.adjust(pad, 0, -dim, -Ph::Frame_Selected_Edge_Width);
             return visualRect(option->direction, option->rect, r);
         }
         case SC_ComboBoxListBoxPopup: {
