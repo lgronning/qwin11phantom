@@ -2217,6 +2217,8 @@ void QWin11PhantomStyle::drawControl(ControlElement element,
                 // RTL *doesn't* need hacks applied. In LTR, we can just treat the
                 // corner button like anything else on the horizontal header bar, and
                 // can skip doing this inherits check.
+                spansToEnd = true;
+
                 if (isOnlyOne && !isLeftToRight && widget &&
                         widget->inherits("QTableCornerButton")) {
                     isSpecialCorner = true;
@@ -2281,9 +2283,8 @@ void QWin11PhantomStyle::drawControl(ControlElement element,
             }
         }
 
-        QRectF bgRect = Ph::expandRect(rect, edges, -1);
-        painter->fillRect(bgRect, swatch.color(S_base));
-        Ph::fillRectEdges(painter, rect, edges, Ph::Edge_Default_Thickness, 0, swatch, S_window_outline);
+        painter->fillRect(rect, swatch.color(S_base));
+//        Ph::fillRectEdges(painter, rect, edges, Ph::Default_Thickness, 0, swatch, S_window_outline);
         break;
     }
     case CE_HeaderLabel: {
@@ -4197,9 +4198,6 @@ QSize QWin11PhantomStyle::sizeFromContents(ContentsType type,
                 pad = (int)Ph::dpiScaled(Ph::ComboBox_NonEditable_ContentsHPad);
             }
             newSize.rwidth() += (pad * 2);
-
-            const int fw = cb->frame ? proxy()->pixelMetric(PM_SpinBoxFrameWidth, cb, widget) : 0;
-            newSize += QSize(2*fw, 2*fw);
         }
 #endif
         break;
@@ -4212,18 +4210,7 @@ QSize QWin11PhantomStyle::sizeFromContents(ContentsType type,
         break;
     }
     case CT_SpinBox:
-        if (const QStyleOptionSpinBox *vopt = qstyleoption_cast<const QStyleOptionSpinBox *>(option))
-        {
-            int pad = 0;
-            pad = (int)Ph::dpiScaled(Ph::LineEdit_ContentsHPad);
-            newSize.rwidth() += (pad * 2);
-
-            const int fw = vopt->frame ? proxy()->pixelMetric(PM_SpinBoxFrameWidth, vopt, widget) : 0;
-            newSize += QSize(2*fw, 2*fw);
-        }
-
-
-        // No adjustment necessary
+        newSize.rheight() += Ph::Edge_Default_Thickness;
         break;
     case CT_SizeGrip:
         newSize += QSize(4, 4);
